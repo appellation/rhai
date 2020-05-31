@@ -965,6 +965,18 @@ impl Engine {
             )
     }
 
+    #[cfg(not(feature = "no_function"))]
+    pub fn call_fn<A: FuncArgs, T: Variant + Clone>(
+        &self,
+        scope: &mut Scope,
+        ast: &AST,
+        name: &str,
+        args: A,
+    ) -> Result<T, Box<EvalAltResult>> {
+        let mut arg_values = args.into_vec();
+        self.call_fn_dynamic(scope, ast, name, arg_values.iter_mut())
+    }
+
     /// Call a script function defined in an `AST` with multiple arguments.
     ///
     /// # Example
@@ -1001,15 +1013,14 @@ impl Engine {
     /// # }
     /// ```
     #[cfg(not(feature = "no_function"))]
-    pub fn call_fn<A: FuncArgs, T: Variant + Clone>(
+    pub fn call_fn_dynamic<'a, T: Variant + Clone>(
         &self,
         scope: &mut Scope,
         ast: &AST,
         name: &str,
-        args: A,
+        args: impl Iterator<Item = &'a mut Dynamic>,
     ) -> Result<T, Box<EvalAltResult>> {
-        let mut arg_values = args.into_vec();
-        let mut args: StaticVec<_> = arg_values.iter_mut().collect();
+        let mut args: StaticVec<_> = args.collect();
         let fn_lib = ast.fn_lib();
         let pos = Position::none();
 
